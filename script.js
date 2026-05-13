@@ -10,26 +10,25 @@ const MINS_POR_TURNO = 5;
 const MINS_AVISO     = 10;
 const TURNOS_AVISO   = Math.ceil(MINS_AVISO / MINS_POR_TURNO);
 
-// ─── SOLO NÚMEROS ────────────────────────────────────────────────────
+// ─── SOLO NÚMEROS (compatible móvil) ─────────────────────────────────
 function aplicarFiltroNumerosInput(el) {
   if (!el) return;
-  el.addEventListener('keydown', function(e) {
-    const ok = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End','Enter'];
-    if (ok.includes(e.key) || e.ctrlKey || e.metaKey) return;
-    if (!/^\d$/.test(e.key)) e.preventDefault();
-  });
   el.addEventListener('input', function() {
     const pos = this.selectionStart;
     const limpio = this.value.replace(/\D/g, '');
     if (this.value !== limpio) {
       this.value = limpio;
-      try { this.setSelectionRange(pos - 1, pos - 1); } catch(_) {}
+      try { this.setSelectionRange(pos, pos); } catch(_) {}
     }
   });
   el.addEventListener('paste', function(e) {
     e.preventDefault();
     const txt = (e.clipboardData || window.clipboardData).getData('text');
-    document.execCommand('insertText', false, txt.replace(/\D/g, ''));
+    const limpio = txt.replace(/\D/g, '');
+    const start = this.selectionStart;
+    const end = this.selectionEnd;
+    this.value = this.value.slice(0, start) + limpio + this.value.slice(end);
+    try { this.setSelectionRange(start + limpio.length, start + limpio.length); } catch(_) {}
   });
 }
 
@@ -113,29 +112,40 @@ function renderTicker(items) {
 async function cargarCola() {
   try {
     const data  = await apiGetColaEnVivo();
+    const total = data.turnos.length;
+    const items = data.turnos.map(t => ({
+      code: t.codigo, doc: String(t.documento).slice(-4),
+      tipo: t.tipo_usuario||'general',
+      prio: ['mayor','especial'].includes(t.tipo_usuario),
+      active: t.estado==='atendiendo'
+    }));
+    const html = items.length
+      ? renderTicker(items) + renderTicker(items)
+      : renderTicker([]);
+
     const track = document.getElementById('ticker-track');
     if (track) {
-      const items = data.turnos.map(t => ({
-        code: t.codigo, doc: String(t.documento).slice(-4),
-        tipo: t.tipo_usuario||'general',
-        prio: ['mayor','especial'].includes(t.tipo_usuario),
-        active: t.estado==='atendiendo'
-      }));
-      track.innerHTML = renderTicker(items) + renderTicker(items);
+      track.innerHTML = html;
+      track.style.animation = 'none';
+      track.offsetHeight; // reflow
+      track.style.animation = '';
     }
-    const total = data.turnos.length;
+
+    const mobTrack = document.getElementById('mob-ticker-track');
+    if (mobTrack) {
+      mobTrack.innerHTML = html;
+      mobTrack.style.animation = 'none';
+      mobTrack.offsetHeight; // reflow
+      mobTrack.style.animation = '';
+    }
+
     const el = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
     el('stat-espera', `~${total*5} min`);
     el('stat-cola', total);
     el('stat-actual', total>0 ? data.turnos[0].codigo : '---');
-    // Sync mini stats móvil
     el('mob-espera', `~${total*5}m`);
     el('mob-cola', total);
     el('mob-actual', total>0 ? data.turnos[0].codigo : '---');
-    const mobTrack = document.getElementById('mob-ticker-track');
-    if (mobTrack) {
-      mobTrack.innerHTML = renderTicker(items) + renderTicker(items);
-    }
   } catch (_) {}
 }
 
