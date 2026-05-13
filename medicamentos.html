@@ -188,7 +188,9 @@
 </div>
 
 <script>
-const API='http://localhost:8000/api';
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000/api'
+  : `${window.location.origin}/api`;
 let allMeds=[],activeF='all',statsAnimated=false;
 
 const CATS={
