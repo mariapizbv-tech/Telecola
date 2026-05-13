@@ -31,17 +31,29 @@ DB_USER     = os.getenv("DB_USER",     "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "maria123")
 DB_NAME     = os.getenv("DB_NAME",     "telecola_db")
 
-# Servir archivos estáticos (HTML, JS, CSS) desde la misma carpeta
-app.mount("/static", StaticFiles(directory="."), name="static")
-
 @app.get("/")
 def root(): return FileResponse("index.html")
 
 @app.get("/admin")
 def admin(): return FileResponse("admin.html")
 
+@app.get("/medicamentos.html")
+def medicamentos_html(): return FileResponse("medicamentos.html")
+
 @app.get("/medicamentos")
 def medicamentos(): return FileResponse("medicamentos.html")
+
+@app.get("/admin.html")
+def admin_html(): return FileResponse("admin.html")
+
+@app.get("/script.js")
+def script_js(): return FileResponse("script.js")
+
+@app.get("/api.js")
+def api_js(): return FileResponse("api.js")
+
+@app.get("/styles.css")
+def styles_css(): return FileResponse("styles.css")
 
 # Lock para evitar condiciones de carrera cuando 30 personas
 # solicitan turno al mismo tiempo
