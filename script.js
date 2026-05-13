@@ -132,6 +132,10 @@ async function cargarCola() {
     el('mob-espera', `~${total*5}m`);
     el('mob-cola', total);
     el('mob-actual', total>0 ? data.turnos[0].codigo : '---');
+    const mobTrack = document.getElementById('mob-ticker-track');
+    if (mobTrack) {
+      mobTrack.innerHTML = renderTicker(items) + renderTicker(items);
+    }
   } catch (_) {}
 }
 
