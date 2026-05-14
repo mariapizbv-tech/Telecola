@@ -273,4 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarCola();
   setInterval(cargarCola, 8000);
   ['sol-doc', 'con-doc'].forEach(id => aplicarFiltroNumerosInput(document.getElementById(id)));
+
+  // Bind buttons via addEventListener (more reliable on mobile)
+  const btnSolicitar = document.getElementById('btn-solicitar');
+  if (btnSolicitar) btnSolicitar.addEventListener('click', solicitarTurno);
+
+  const btnConsultar = document.querySelector('#screen-consultar .btn-submit');
+  if (btnConsultar) btnConsultar.addEventListener('click', consultarTurno);
 });
