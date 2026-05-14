@@ -24,7 +24,7 @@ app.add_middleware(
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
 EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "mariapizbv@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "brno vyqn zzbg qpad")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "wktk owxb szhx jeeq")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
 DB_USER     = os.getenv("DB_USER",     "root")
