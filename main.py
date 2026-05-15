@@ -22,8 +22,9 @@ app.add_middleware(
 #  CONFIGURACIÓN — Lee de variables de entorno si existen (nube)
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
-BREVO_API_KEY  = os.getenv("BREVO_API_KEY",  "")
-EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "mariapizbv@gmail.com")
+EMAIL_EMISOR    = os.getenv("EMAIL_EMISOR",    "mariapizbv@gmail.com")
+BREVO_SMTP_USER = os.getenv("BREVO_SMTP_USER", "ab3e24001@smtp-brevo.com")
+BREVO_SMTP_PASS = os.getenv("BREVO_SMTP_PASS", "Ag8SWcwIDxOrY4BN")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
 DB_USER     = os.getenv("DB_USER",     "root")
@@ -98,24 +99,20 @@ def _worker_correos():
 </td></tr></table>
 </body></html>"""
 
-            import urllib.request, json as _json
-            payload = _json.dumps({
-                "sender": {"name": "TELECOLA Farmacia", "email": EMAIL_EMISOR},
-                "to": [{"email": destinatario}],
-                "subject": asunto,
-                "htmlContent": html
-            }).encode()
-            req = urllib.request.Request(
-                "https://api.brevo.com/v3/smtp/email",
-                data=payload,
-                headers={
-                    "api-key": BREVO_API_KEY,
-                    "Content-Type": "application/json"
-                },
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                print(f"✅ Correo Brevo → {destinatario} ({resp.status})")
+            import smtplib
+            from email.message import EmailMessage
+            msg = EmailMessage()
+            msg["Subject"] = asunto
+            msg["From"]    = f"TELECOLA Farmacia <{EMAIL_EMISOR}>"
+            msg["To"]      = destinatario
+            msg.set_content(cuerpo)
+            msg.add_alternative(html, subtype="html")
+            with smtplib.SMTP("smtp-relay.brevo.com", 587, timeout=15) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.login(BREVO_SMTP_USER, BREVO_SMTP_PASS)
+                smtp.send_message(msg)
+                print(f"✅ Correo Brevo SMTP → {destinatario}")
 
         except Exception as e:
             print(f"❌ Error correo Resend: {type(e).__name__}: {e}")
