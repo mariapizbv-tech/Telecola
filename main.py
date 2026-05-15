@@ -107,9 +107,7 @@ def _worker_correos():
             msg["To"]      = destinatario
             msg.set_content(cuerpo)
             msg.add_alternative(html, subtype="html")
-            with smtplib.SMTP("smtp-relay.brevo.com", 587, timeout=15) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
+            with smtplib.SMTP_SSL("smtp-relay.brevo.com", 465, timeout=15) as smtp:
                 smtp.login(BREVO_SMTP_USER, BREVO_SMTP_PASS)
                 smtp.send_message(msg)
                 print(f"✅ Correo Brevo SMTP → {destinatario}")
