@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import mysql.connector
-import smtplib
 import threading
 import queue
 import os
@@ -23,8 +22,8 @@ app.add_middleware(
 #  CONFIGURACIÓN — Lee de variables de entorno si existen (nube)
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
+BREVO_API_KEY  = os.getenv("BREVO_API_KEY",  "")
 EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "mariapizbv@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "wktk owxb szhx jeeq")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
 DB_USER     = os.getenv("DB_USER",     "root")
@@ -67,21 +66,13 @@ _mail_queue: queue.Queue = queue.Queue()
 
 
 def _worker_correos():
-    """Hilo permanente que procesa la cola de correos."""
-    smtp_conn = None
+    """Hilo permanente que procesa la cola de correos via Resend."""
     while True:
         try:
-            item = _mail_queue.get()          # espera hasta que haya algo
+            item = _mail_queue.get()
             if item is None:
                 break
             destinatario, asunto, cuerpo = item
-
-            msg = EmailMessage()
-            msg["Subject"] = asunto
-            msg["From"]    = f"TELECOLA Farmacia <{EMAIL_EMISOR}>"
-            msg["To"]      = destinatario
-            msg["X-Mailer"] = "TELECOLA-System/1.0"
-            msg.set_content(cuerpo)
 
             lineas_html = "".join(
                 f'<p style="margin:0 0 12px;color:#1a1a1a;line-height:1.6;">{line}</p>'
@@ -92,13 +83,11 @@ def _worker_correos():
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef4f0;padding:28px 0"><tr><td align="center">
 <table width="500" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #d4e8dd">
   <tr><td style="background:#0b3d2e;padding:22px 28px;text-align:center">
-    <img src="https://i.ibb.co/Q73TMM8f/logo-telecola.png" width="54" height="54" alt="TELECOLA" style="display:inline-block;vertical-align:middle;margin-right:12px;border-radius:8px">
     <span style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;color:#ffffff;vertical-align:middle;letter-spacing:-0.5px">TELE<span style="color:#00c98a">COLA</span></span>
     <div style="font-family:Arial,Helvetica,sans-serif;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">FILAS VIRTUALES &nbsp;&middot;&nbsp; BOGOT&Aacute;</div>
   </td></tr>
   <tr><td style="background:#00c98a;height:3px;font-size:0">&nbsp;</td></tr>
   <tr><td style="padding:24px 28px">{lineas_html}</td></tr>
-  <tr><td style="padding:0 28px"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #d4e8dd;height:1px;font-size:0">&nbsp;</td></tr></table></td></tr>
   <tr><td style="padding:14px 28px 20px;text-align:center;background:#f4fbf7">
     <p style="margin:0;font-size:10px;color:#7a9e8b;font-family:Arial,sans-serif">
       Mensaje autom&aacute;tico &mdash; no respondas este correo<br>
@@ -109,34 +98,27 @@ def _worker_correos():
 </td></tr></table>
 </body></html>"""
 
-            msg.add_alternative(html, subtype="html")
+            import urllib.request, json as _json
+            payload = _json.dumps({
+                "sender": {"name": "TELECOLA Farmacia", "email": EMAIL_EMISOR},
+                "to": [{"email": destinatario}],
+                "subject": asunto,
+                "htmlContent": html
+            }).encode()
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=payload,
+                headers={
+                    "api-key": BREVO_API_KEY,
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                print(f"✅ Correo Brevo → {destinatario} ({resp.status})")
 
-            # Reutilizar conexión SMTP si sigue activa
-            try:
-                if smtp_conn:
-                    smtp_conn.noop()   # ping para ver si sigue viva
-            except Exception:
-                smtp_conn = None
-
-            if not smtp_conn:
-                smtp_conn = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
-                smtp_conn.ehlo()
-                smtp_conn.starttls()
-                smtp_conn.ehlo()
-                smtp_conn.login(EMAIL_EMISOR, EMAIL_PASSWORD)
-                print("✅ Conexión SMTP establecida")
-
-            smtp_conn.send_message(msg)
-            print(f"✅ Correo → {destinatario}")
-
-        except smtplib.SMTPAuthenticationError:
-            print("❌ App-password incorrecta")
-            smtp_conn = None
-        except smtplib.SMTPRecipientsRefused:
-            print(f"❌ Dirección rechazada: {destinatario}")
         except Exception as e:
-            print(f"❌ Error correo: {type(e).__name__}: {e}")
-            smtp_conn = None   # forzar reconexión en el siguiente intento
+            print(f"❌ Error correo Resend: {type(e).__name__}: {e}")
         finally:
             _mail_queue.task_done()
 
