@@ -105,9 +105,7 @@ def _worker_correos():
             msg2["To"]      = destinatario
             msg2.set_content(cuerpo)
             msg2.add_alternative(html, subtype="html")
-            with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
                 smtp.login(EMAIL_EMISOR, EMAIL_PASSWORD)
                 smtp.send_message(msg2)
                 print(f"✅ Correo Gmail → {destinatario}")
