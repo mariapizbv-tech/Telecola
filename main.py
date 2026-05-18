@@ -119,6 +119,8 @@ def _worker_correos():
 
         except Exception as e:
             print(f"❌ Error correo Resend: {type(e).__name__}: {e}")
+            if hasattr(e, 'read'):
+                print(f"❌ Detalle: {e.read().decode()}")
         finally:
             _mail_queue.task_done()
 
