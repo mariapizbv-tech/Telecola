@@ -23,7 +23,7 @@ app.add_middleware(
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
 EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "mariapizbv@gmail.com")
-BREVO_API_KEY  = os.getenv("BREVO_API_KEY",  "")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "wktk owxb szhx jeeq")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
 DB_USER     = os.getenv("DB_USER",     "root")
@@ -98,24 +98,19 @@ def _worker_correos():
 </td></tr></table>
 </body></html>"""
 
-            import urllib.request, json as _json
-            payload = _json.dumps({
-                "sender": {"name": "TELECOLA Farmacia", "email": EMAIL_EMISOR},
-                "to": [{"email": destinatario}],
-                "subject": asunto,
-                "htmlContent": html
-            }).encode()
-            req = urllib.request.Request(
-                "https://api.brevo.com/v3/smtp/email",
-                data=payload,
-                headers={
-                    "api-key": BREVO_API_KEY,
-                    "Content-Type": "application/json"
-                },
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                print(f"✅ Correo Brevo → {destinatario} ({resp.status})")
+            import smtplib
+            msg2 = EmailMessage()
+            msg2["Subject"] = asunto
+            msg2["From"]    = f"TELECOLA Farmacia <{EMAIL_EMISOR}>"
+            msg2["To"]      = destinatario
+            msg2.set_content(cuerpo)
+            msg2.add_alternative(html, subtype="html")
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.login(EMAIL_EMISOR, EMAIL_PASSWORD)
+                smtp.send_message(msg2)
+                print(f"✅ Correo Gmail → {destinatario}")
 
         except Exception as e:
             print(f"❌ Error correo Resend: {type(e).__name__}: {e}")
