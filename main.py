@@ -22,7 +22,7 @@ app.add_middleware(
 #  CONFIGURACIÓN — Lee de variables de entorno si existen (nube)
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
-EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "noreply@telecola.site")
+EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "turnosvirtuales@telecola.site")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "re_f8n17ryJ_3HrTjmnD4XdQNVgPQnqBtPW2")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
