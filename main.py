@@ -22,8 +22,8 @@ app.add_middleware(
 #  CONFIGURACIÓN — Lee de variables de entorno si existen (nube)
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
-EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "mariapizbv@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "wktk owxb szhx jeeq")
+EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "noreply@telecola.site")
+BREVO_API_KEY  = os.getenv("BREVO_API_KEY",  "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")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
 DB_USER     = os.getenv("DB_USER",     "root")
@@ -98,17 +98,24 @@ def _worker_correos():
 </td></tr></table>
 </body></html>"""
 
-            import smtplib
-            msg2 = EmailMessage()
-            msg2["Subject"] = asunto
-            msg2["From"]    = f"TELECOLA Farmacia <{EMAIL_EMISOR}>"
-            msg2["To"]      = destinatario
-            msg2.set_content(cuerpo)
-            msg2.add_alternative(html, subtype="html")
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
-                smtp.login(EMAIL_EMISOR, EMAIL_PASSWORD)
-                smtp.send_message(msg2)
-                print(f"✅ Correo Gmail → {destinatario}")
+            import urllib.request, json as _json
+            payload = _json.dumps({
+                "sender": {"name": "TELECOLA Farmacia", "email": EMAIL_EMISOR},
+                "to": [{"email": destinatario}],
+                "subject": asunto,
+                "htmlContent": html
+            }).encode()
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=payload,
+                headers={
+                    "api-key": BREVO_API_KEY,
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                print(f"✅ Correo Brevo → {destinatario} ({resp.status})")
 
         except Exception as e:
             print(f"❌ Error correo Resend: {type(e).__name__}: {e}")
