@@ -23,7 +23,7 @@ app.add_middleware(
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
 EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "turnosvirtuales@telecola.site")
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "re_f8n17ryJ_3HrTjmnD4XdQNVgPQnqBtPW2")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "re_R1GnV9VZ_EfKdmepuxYbEJnf187dEz6ci")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
 DB_USER     = os.getenv("DB_USER",     "root")
