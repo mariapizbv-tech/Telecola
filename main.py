@@ -23,7 +23,7 @@ app.add_middleware(
 #  En local usa los valores por defecto
 # ════════════════════════════════════════════════════════════════════
 EMAIL_EMISOR   = os.getenv("EMAIL_EMISOR",   "noreply@telecola.site")
-BREVO_API_KEY  = os.getenv("BREVO_API_KEY",  "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")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "re_f8n17ryJ_3HrTjmnD4XdQNVgPQnqBtPW2")
 
 DB_HOST     = os.getenv("DB_HOST",     "localhost")
 DB_USER     = os.getenv("DB_USER",     "root")
@@ -100,22 +100,22 @@ def _worker_correos():
 
             import urllib.request, json as _json
             payload = _json.dumps({
-                "sender": {"name": "TELECOLA Farmacia", "email": EMAIL_EMISOR},
-                "to": [{"email": destinatario}],
+                "from": f"TELECOLA Farmacia <{EMAIL_EMISOR}>",
+                "to": [destinatario],
                 "subject": asunto,
-                "htmlContent": html
+                "html": html
             }).encode()
             req = urllib.request.Request(
-                "https://api.brevo.com/v3/smtp/email",
+                "https://api.resend.com/emails",
                 data=payload,
                 headers={
-                    "api-key": BREVO_API_KEY,
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
                     "Content-Type": "application/json"
                 },
                 method="POST"
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
-                print(f"✅ Correo Brevo → {destinatario} ({resp.status})")
+                print(f"✅ Correo Resend → {destinatario} ({resp.status})")
 
         except Exception as e:
             print(f"❌ Error correo Resend: {type(e).__name__}: {e}")
